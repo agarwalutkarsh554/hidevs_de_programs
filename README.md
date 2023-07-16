@@ -1,4 +1,3 @@
-Certainly! Here's a template for a README file where you can fill in your details:
 
 # Python Code 1
 ## Description
