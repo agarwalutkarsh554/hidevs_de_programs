@@ -1,0 +1,137 @@
+import os
+import shutil
+import csv
+import logging
+import time
+
+# Set up logging
+log_folder = 'logs'
+os.makedirs(log_folder, exist_ok=True)
+logging.basicConfig(filename='logs/app.log', level=logging.INFO,# Info, warning,level,critical
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+class FileConsolidator:
+    def __init__(self, target_folder):
+        self.target_folder = target_folder
+    
+    def consolidate_files(self, source_folders):
+        for folder in source_folders:#missing folder error check
+            if not os.path.exists(folder):
+                logging.error(f"Source folder '{folder}' does not exist.")
+                continue
+            
+            for root, dirs, files in os.walk(folder):
+                for file in files:
+                    source_path = os.path.join(root, file)
+                    target_path = os.path.join(self.target_folder, file)
+                    
+                    # Handle duplicate files by renaming
+                    if os.path.exists(target_path):
+                        filename, ext = os.path.splitext(file)
+                        counter = 1
+                        while os.path.exists(target_path):
+                            new_filename = f"{filename}_{counter}{ext}"
+                            target_path = os.path.join(self.target_folder, new_filename)
+                            counter += 1
+                    
+                    try:
+                        # Move file to target folder
+                        shutil.move(source_path, target_path)
+                        logging.info(f"Moved file '{file}' to target folder.")
+                    except Exception as e:
+                        logging.error(f"Failed to move file '{file}': {str(e)}")
+
+class DetailExtractor:
+    def __init__(self, target_folder):
+        self.target_folder = target_folder
+    
+    def extract_details(self):
+        file_details = []
+        
+        for root, dirs, files in os.walk(self.target_folder):
+            for file in files:
+                file_path = os.path.join(root, file)
+                file_size = os.path.getsize(file_path)
+                file_size_kb = file_size / 1024
+                file_size_mb = file_size_kb / 1024
+                
+                file_details.append({
+                    'File Name': file,
+                    'File Format': os.path.splitext(file)[1],
+
+                    'File Size': f"{file_size_kb} KB",
+                    'File Location': file_path
+                })
+        
+        return file_details
+
+class CSVCreator:
+    def __init__(self, output_folder):
+        self.output_folder = output_folder
+    
+    def create_file_details_csv(self, file_details):
+        csv_file = os.path.join(self.output_folder, 'file_details.csv')
+        fieldnames = ['File Name', 'File Format', 'File Size', 'File Location']
+        
+        try:
+            with open(csv_file, 'w', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(file_details)
+                logging.info(f"Created file details CSV: {csv_file}")
+        except Exception as e:
+            logging.error(f"Failed to create file details CSV: {str(e)}")
+    
+    def create_performance_log_csv(self, performance_data):
+        csv_file = os.path.join(self.output_folder, 'performance_log.csv')
+        fieldnames = ['Step', 'Time (s)']
+        
+        try:
+            with open(csv_file, 'w', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(performance_data)
+                logging.info(f"Created performance log CSV: {csv_file}")
+        except Exception as e:
+            logging.error(f"Failed to create performance log CSV: {str(e)}")
+
+# Usage example
+if __name__ == '__main__':
+    # Set up the target folder and source folders
+    target_folder = input("Enter the target folder path: ")
+    source_folders = input("Enter the source folder path: ")
+    
+    # Set up the output folder
+    output_folder = 'output'
+    os.makedirs(output_folder, exist_ok=True)
+    
+    # Initialize the file consolidator, detail extractor, and CSV creator
+    consolidator = FileConsolidator(target_folder)
+    extractor = DetailExtractor(target_folder)
+    csv_creator = CSVCreator(output_folder)
+    
+    try:
+        # Start the performance timer
+        start_time = time.time()
+        
+        # Perform file consolidation
+        consolidator.consolidate_files(source_folders)
+        
+        # End the performance timer and calculate the time taken
+        consolidation_time = time.time() - start_time
+        
+        # Extract file details
+        file_details = extractor.extract_details()
+        
+        # Create the file details CSV
+        csv_creator.create_file_details_csv(file_details)
+        
+        # Create the performance log CSV
+        performance_data = [
+            {'Step': 'File Consolidation', 'Time (s)': consolidation_time},
+            # Add other performance data for different steps if needed
+        ]
+        csv_creator.create_performance_log_csv(performance_data)
+        
+    except Exception as e:
+        logging.error(f"An error occurred: {str(e)}")
