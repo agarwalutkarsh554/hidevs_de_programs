@@ -1,0 +1,57 @@
+import pickle
+
+class PersonDOBManager:
+    def __init__(self, data_file):
+        self.data_file = data_file
+        self.data = {}  # Dictionary to store names and dates of birth
+        self.secret_names = []  # List to store secret names
+
+    def load_data(self):
+        try:
+            with open(self.data_file, 'rb') as file:
+                saved_data = pickle.load(file)
+                self.data.update(saved_data)
+        except FileNotFoundError:
+            pass
+
+    def save_data(self):
+        with open(self.data_file, 'wb') as file:
+            pickle.dump(self.data, file)
+
+    def add_person_dob(self, name, dob):
+        self.data[name] = dob
+        self.save_data()
+
+    def add_secret_name(self, name):
+        self.secret_names.append(name)
+        self.save_data()
+
+    def get_dob(self, name):
+        if name in self.secret_names:
+            return "Secret"
+        return self.data.get(name, "Name not found")
+
+if __name__ == "__main__":
+    data_file = "problem1_data_file.pickle"
+    dob_manager = PersonDOBManager(data_file)
+    dob_manager.load_data()
+
+    while True:
+        name = input("Enter the person's name (type 'exit' to quit): ")
+        if name.lower() == 'exit':
+            break
+        
+        dob = input("Enter the date of birth (YYYY-MM-DD): ")
+        
+        if name.lower() == 'secret':
+            dob_manager.add_secret_name(name)
+        else:
+            dob_manager.add_person_dob(name, dob)
+            
+    while True:
+        name = input("Enter the name to retrieve date of birth (type 'exit' to quit): ")
+        if name.lower() == 'exit':
+            break
+        
+        dob = dob_manager.get_dob(name)
+        print(f"Date of Birth: {dob}")

@@ -1,0 +1,82 @@
+import pickle
+
+class AddressBook:
+    def __init__(self):
+        self.address_book = {}
+        self.email_set = set()
+        self.phone_set = set()
+        self.load_data_from_file()
+
+    def add_entry(self, fname, lname, street, city, state, country, mobile, email):
+        if email in self.email_set or mobile in self.phone_set:
+            print("Error: Email or mobile number already exists.")
+            return
+
+        self.address_book[email] = {
+            'Fname': fname,
+            'LName': lname,
+            'StreetAddress': street,
+            'City': city,
+            'State': state,
+            'Country': country,
+            'Mobile': mobile
+        }
+        self.email_set.add(email)
+        self.phone_set.add(mobile)
+
+        self.save_data_to_file()
+
+    def find_occurrences(self, field, value):
+        return sum(1 for entry in self.address_book.values() if entry[field] == value)
+
+    def find_fname_occurrences(self, fname):
+        return self.find_occurrences('Fname', fname)
+
+    def find_lname_occurrences(self, lname):
+        return self.find_occurrences('LName', lname)
+
+    def find_street_occurrences(self, street):
+        return self.find_occurrences('StreetAddress', street)
+
+    def find_all_occurrences(self, value):
+        fname_occurrences = self.find_fname_occurrences(value)
+        lname_occurrences = self.find_lname_occurrences(value)
+        street_occurrences = self.find_street_occurrences(value)
+        return fname_occurrences, lname_occurrences, street_occurrences
+
+    def save_data_to_file(self):
+        with open('problem2_data_file.pickle', 'wb') as f:
+            data = (self.address_book, self.email_set, self.phone_set)
+            pickle.dump(data, f)
+
+    def load_data_from_file(self):
+        try:
+            with open('problem2_data_file.pickle', 'rb') as f:
+                data = pickle.load(f)
+                self.address_book, self.email_set, self.phone_set = data
+        except FileNotFoundError:
+            pass
+
+
+# Usage example:
+if __name__ == "__main__":
+    address_book = AddressBook()
+
+    # Input data from the console and store in the address book
+    fname = input("Enter First Name: ")
+    lname = input("Enter Last Name: ")
+    street = input("Enter Street Address: ")
+    city = input("Enter City: ")
+    state = input("Enter State: ")
+    country = input("Enter Country: ")
+    mobile = input("Enter Mobile Number: ")
+    email = input("Enter Email: ")
+
+    address_book.add_entry(fname, lname, street, city, state, country, mobile, email)
+
+    # Find occurrences
+    search_value = input("Enter the value to search for occurrences: ")
+    fname_occurrences, lname_occurrences, street_occurrences = address_book.find_all_occurrences(search_value)
+    print(f"Occurrences of First Name '{search_value}': {fname_occurrences}")
+    print(f"Occurrences of Last Name '{search_value}': {lname_occurrences}")
+    print(f"Occurrences of Street '{search_value}': {street_occurrences}")
